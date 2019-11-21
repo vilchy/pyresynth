@@ -4,7 +4,7 @@ from pyresynth import core
 
 
 def find_ranges(test_list, threshold):
-    e = core.Envelope(np.array(test_list), 1., 0.)
+    e = core.Envelope(np.array(test_list), core.Axis(step=1))
     return list(e.find_ranges_above_threshold(threshold))
 
 
@@ -29,7 +29,7 @@ def test_find_ranges_above_threshold_for_double_not_padded_range():
 
 
 def envelope_data(test_list, threshold):
-    return list(core.Envelope(np.array(test_list), 0.5, 0., threshold).data)
+    return list(core.Envelope(np.array(test_list), core.Axis(step=0.5), threshold).data)
 
 
 def test_envelope_for_all_values_above_threshold():

@@ -13,61 +13,45 @@ from pyresynth import utils
 
 
 @dataclass
-class DataOverTime:
-    """Base class for representing NumPy data with a time axis.
+class Axis:
+    """A class for representing an axis.
 
     Constructor parameters:
-        data: NumPy array with the data.
-        delta_t: Spacing between time values (in seconds).
-        t_0: Start time in seconds. The default value is 0.
+        step: Spacing between values.
+        start: Start value. The default value is 0.
     """
 
-    data: np.ndarray
-    delta_t: float
-    t_0: float = 0
+    step: float
+    start: float = 0
 
-    @property
-    def t_axis(self) -> np.ndarray:
-        """Return NumPy array of time values forming a time axis."""
-        stop = self.t_0 + len(self.data) * self.delta_t
-        return np.linspace(self.t_0, stop, len(self.data), endpoint=False)
+    def range(self, length: int) -> np.ndarray:
+        """Return NumPy array of values forming an axis."""
+        stop = self.start + length * self.step
+        return np.linspace(self.start, stop, length, endpoint=False)
 
-    def plot(self):
-        """Plot the data using Matplotlib."""
-        plt.plot(self.t_axis, self.data)
-        plt.xlabel('t (sec)')
-        plt.show()
+    def index(self, val: float) -> int:
+        """Return zero-based index of a value."""
+        return int(round((val - self.start) / self.step, 0))  # np.round returns float
 
-    def t_to_idx(self, time: float) -> int:
-        """Convert a time value to a position in the data array.
-
-        :param time: Time in seconds.
-        :return: Position of the time value.
-        """
-        return int(round((time - self.t_0) / self.delta_t, 0))  # np.round returns float
-
-    def idx_to_t(self, idx: int) -> float:
-        """Convert position in the data array to a time value.
-
-        :param idx: Position in the data array.
-        :return: Time value (in seconds) of the position in the data array.
-        """
-        return self.t_0 + idx * self.delta_t
+    def __getitem__(self, index: int) -> float:
+        """Return value for a given index."""
+        return self.start + index * self.step
 
 
-class Envelope(DataOverTime):
+class Envelope:
     """A class to represent signal amplitude envelopes in the time domain."""
 
-    def __init__(self, data: np.ndarray, delta_t: float, t_0: float = 0, threshold=None):
+    def __init__(self, data: np.ndarray, t_axis: Axis, threshold=None):
         """`Envelope` constructor.
 
         :param data: NumPy array with the data.
-        :param delta_t: Spacing in time between values.
-        :param t_0: Start time. The default value is 0.
+        :param t_axis: Time axis.
         :param threshold: Minimum value in dBFS. The default value is the lowest value
             in the data or -90, whichever is the lower.
         """
-        super().__init__(data=data, delta_t=delta_t, t_0=t_0)
+        self.data = data
+        self.t_axis = t_axis
+
         if threshold is None:
             self.threshold = np.min(data[data > -inf], initial=-90)
         else:
@@ -79,7 +63,7 @@ class Envelope(DataOverTime):
             first_idx = max(0, above_threshold_indices[0] - 1)
             last_idx = min(len(data) - 1, above_threshold_indices[-1] + 1)
             self.data = data[first_idx: last_idx + 1]
-            self.t_0 += first_idx * self.delta_t  # time correction
+            self.t_axis.start += first_idx * self.t_axis.step  # time correction
         else:
             self.data = data
 
@@ -103,11 +87,18 @@ class Envelope(DataOverTime):
                 # append, because no transition at the end
                 end_indices = np.append(end_indices, [len(above_threshold_data)])
 
-        return [(self.idx_to_t(start), self.idx_to_t(end))
+        return [(self.t_axis[start], self.t_axis[end])
                 for start, end in zip(start_indices, end_indices)]
 
+    def plot(self):
+        """Plot the data using Matplotlib."""
+        t_array = self.t_axis.range(len(self.data))
+        plt.plot(t_array, self.data)
+        plt.xlabel('t (sec)')
+        plt.show()
 
-class Sample(DataOverTime):
+
+class Sample:
     """A class to represent and manipulate a sound sample in the time domain."""
 
     default_sample_rate = 44100
@@ -123,8 +114,7 @@ class Sample(DataOverTime):
         else:
             self.data = data
         self.sample_rate = sample_rate
-        self.delta_t = 1/sample_rate
-        self.t_0 = 0
+        self.t_axis = Axis(step=1/sample_rate)
 
     @classmethod
     def load(cls, filename) -> 'Sample':
@@ -225,8 +215,12 @@ class Sample(DataOverTime):
         window_length = 1024
         envel = self.envelope_peak(window_length)
         ranges = envel.find_ranges_above_threshold(threshold)
-        return [Sample(self.data[self.t_to_idx(start): self.t_to_idx(end)], self.sample_rate)
-                for start, end in ranges]
+
+        sample_list = []
+        for start, end in ranges:
+            data_slice = self.data[self.t_axis.index(start): self.t_axis.index(end)]
+            sample_list.append(Sample(data_slice, self.sample_rate))
+        return sample_list
 
     def envelope_peak(self, window_length: int, overlap: int = 0) -> 'Envelope':
         """Return envelope of peak amplitude values.
@@ -262,7 +256,10 @@ class Sample(DataOverTime):
         for i in range(0, frame_count):
             # (last frame will be shorter)
             envelope_data[i] = fun(self.data[i * hop_length: i * hop_length + window_length])
-        return Envelope(envelope_data, hop_length * self.delta_t, window_length / 2 * self.delta_t)
+
+        envelope_step = hop_length * self.t_axis.step
+        envelope_start = window_length / 2 * self.t_axis.step
+        return Envelope(envelope_data, Axis(envelope_step, envelope_start))
 
     def __sub__(self, other: 'Sample') -> 'Sample':
         """Return self-other. Works only if sample rates match."""
@@ -299,3 +296,10 @@ class Sample(DataOverTime):
         if isinstance(other, (int, float)):
             return self.__mul__(other)
         return NotImplemented
+
+    def plot(self):
+        """Plot the data using Matplotlib."""
+        t_array = self.t_axis.range(len(self.data))
+        plt.plot(t_array, self.data)
+        plt.xlabel('t (sec)')
+        plt.show()
