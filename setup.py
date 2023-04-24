@@ -20,10 +20,10 @@ setup(
     url='https://github.com/vilchy/pyresynth',
     license=license,
     install_requires=[
-        'matplotlib >= 2.2.4',
-        'numpy >= 1.16.4',
-        'scipy >= 1.2.0',
-        'sounddevice >= 0.3.14',
+        'matplotlib >= 3.7.1',
+        'numpy >= 1.24.3',
+        'scipy >= 1.10.1',
+        'sounddevice >= 0.4.6',
     ],
     packages=find_packages(exclude=('tests', 'docs'))
 )
