@@ -1,8 +1,9 @@
 """Utility functions."""
 import numpy as np
+import numpy.typing as npt
 
 
-def normalize_wavdata(data: np.ndarray) -> np.ndarray:
+def normalize_wavdata(data: npt.NDArray) -> npt.NDArray[np.float32]:
     """Crudely normalize NumPy array to float32 in range [-1.0, 1.0].
 
     :param data: Input Array

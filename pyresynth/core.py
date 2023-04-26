@@ -1,10 +1,15 @@
 """Core functionality including loading audio from disk, computing envelope, generating sounds."""
 from dataclasses import dataclass
 from math import ceil, floor, inf
-from typing import Callable, List, Optional, Tuple
+from types import NotImplementedType
+from typing import List, Optional, Tuple
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from _typeshed import FileDescriptorOrPath
 
 import matplotlib.pyplot as plt
 import numpy as np
+import numpy.typing as npt
 import scipy.io.wavfile
 import scipy.signal
 import sounddevice
@@ -24,7 +29,7 @@ class Axis:
     step: float
     start: float = 0
 
-    def range(self, length: int) -> np.ndarray:
+    def range(self, length: int) -> npt.NDArray:
         """Return NumPy array of values forming an axis."""
         stop = self.start + length * self.step
         return np.linspace(self.start, stop, length, endpoint=False)
@@ -41,19 +46,19 @@ class Axis:
 class Envelope:
     """A class to represent signal amplitude envelopes in the time domain."""
 
-    def __init__(self, data: np.ndarray, t_axis: Axis, threshold=None):
+    def __init__(self, data: npt.NDArray, t_axis: Axis, threshold: Optional[float] = None) -> None:
         """`Envelope` constructor.
 
         :param data: NumPy array with the data.
         :param t_axis: Time axis.
         :param threshold: Minimum value in dBFS. The default value is the lowest value
-            in the data or -90, whichever is the lower.
+            in the data or -90.0, whichever is the lower.
         """
         self.data = data
         self.t_axis = t_axis
 
         if threshold is None:
-            self.threshold = np.min(data[data > -inf], initial=-90)
+            self.threshold = np.min(data[data > -inf], initial=-90.0)
         else:
             self.threshold = threshold
         if len(data) > 0:
@@ -67,7 +72,7 @@ class Envelope:
         else:
             self.data = data
 
-    def find_ranges_above_threshold(self, threshold: int = -80) \
+    def find_ranges_above_threshold(self, threshold: float = -80.0) \
             -> List[Tuple[float, float]]:
         """Find time ranges where the envelope is above a given threshold.
 
@@ -90,7 +95,7 @@ class Envelope:
         return [(self.t_axis[start], self.t_axis[end])
                 for start, end in zip(start_indices, end_indices)]
 
-    def plot(self):
+    def plot(self) -> None:
         """Plot the data using Matplotlib."""
         t_array = self.t_axis.range(len(self.data))
         plt.plot(t_array, self.data)
@@ -103,7 +108,7 @@ class Sample:
 
     default_sample_rate = 44100
 
-    def __init__(self, data: Optional[np.ndarray] = None, sample_rate: int = default_sample_rate):
+    def __init__(self, data: Optional[npt.NDArray] = None, sample_rate: int = default_sample_rate) -> None:
         """`Sample` constructor.
 
         :param data: Optional NumPy array with float32 data in the range [-1.0, 1.0].
@@ -117,7 +122,7 @@ class Sample:
         self.t_axis = Axis(step=1/sample_rate)
 
     @classmethod
-    def load(cls, filename) -> 'Sample':
+    def load(cls, filename: 'FileDescriptorOrPath') -> 'Sample':
         """Load data from a WAV file and return `Sample` object.
 
         :param filename: Input WAV file.
@@ -130,7 +135,7 @@ class Sample:
 
         return cls(utils.normalize_wavdata(data), sample_rate)
 
-    def save(self, filename):
+    def save(self, filename: 'FileDescriptorOrPath') -> None:
         """Save `Sample` data to a WAV file.
 
         :param filename: Output WAV file (string or open file handle).
@@ -140,7 +145,7 @@ class Sample:
 
     @classmethod
     def generate_sin(cls, frequency: float, duration: float,
-                     sample_rate: int = default_sample_rate):
+                     sample_rate: int = default_sample_rate) -> 'Sample':
         """Return a periodic sine waveform.
 
         :param frequency: Frequency (Hz) of the waveform.
@@ -154,7 +159,7 @@ class Sample:
 
     @classmethod
     def generate_square(cls, frequency: float, duration: float,
-                        sample_rate: int = default_sample_rate):
+                        sample_rate: int = default_sample_rate) -> 'Sample':
         """Return a periodic square-wave waveform.
 
         :param frequency: Frequency (Hz) of the waveform.
@@ -168,7 +173,7 @@ class Sample:
 
     @classmethod
     def generate_chirp(cls, frequency_0: float, frequency_1: float, duration: float,
-                       sample_rate: int = default_sample_rate):
+                       sample_rate: int = default_sample_rate) -> 'Sample':
         """Frequency-swept cosine generator.
 
         :param frequency_0: Frequency (Hz) at time t=0.
@@ -183,7 +188,7 @@ class Sample:
 
     @classmethod
     def generate_white_noise(cls, intensity: float, duration: float,
-                             sample_rate: int = default_sample_rate):
+                             sample_rate: int = default_sample_rate) -> 'Sample':
         """Return a `Sample` with uniform white noise over [-intensity, intensity).
 
         :param intensity: Value range of the noise signal (maximal value should be 1.0).
@@ -202,11 +207,11 @@ class Sample:
         """
         return len(self.data) / self.sample_rate
 
-    def play(self):
+    def play(self) -> None:
         """Play back a NumPy array containing the audio data."""
         sounddevice.play(self.data, self.sample_rate)
 
-    def split(self, threshold: int = -80) -> List['Sample']:
+    def split(self, threshold: float = -80.0) -> List['Sample']:
         """Split sounds separated by silence into individual samples.
 
         :param threshold: Threshold in dBFS.
@@ -222,7 +227,7 @@ class Sample:
             sample_list.append(Sample(data_slice, self.sample_rate))
         return sample_list
 
-    def envelope_peak(self, window_length: int, overlap: int = 0) -> 'Envelope':
+    def envelope_peak(self, window_length: int, overlap: int = 0) -> Envelope:
         """Return envelope of peak amplitude values.
 
         :param window_length: Should be >= T/2 for a symmetric signal with fundamental period T.
@@ -233,7 +238,7 @@ class Sample:
             return 20 * np.log10(np.max(np.abs(array)))
         return self.__envelope(peak_func, window_length, overlap)
 
-    def envelope_rms(self, window_length: int, overlap: int = 0) -> 'Envelope':
+    def envelope_rms(self, window_length: int, overlap: int = 0) -> Envelope:
         """Return RMS (Root Mean Square) amplitude envelope of the data.
 
         :param window_length: Should be >= T/2 for a symmetric signal with fundamental period T.
@@ -244,9 +249,7 @@ class Sample:
             return 10 * np.log10(np.mean(np.square(array)))
         return self.__envelope(rms_func, window_length, overlap)
 
-    reduce_fun = Callable[[np.array], float]
-
-    def __envelope(self, fun: reduce_fun, window_length: int, overlap: int = 0):
+    def __envelope(self, fun, window_length, overlap = 0):
         hop_length = floor(window_length * (100 - overlap) / 100)
         frame_count = ceil((len(self.data) - window_length) / hop_length) + 1
         if frame_count < 1:
@@ -285,19 +288,19 @@ class Sample:
 
         return Sample(new_data, self.sample_rate)
 
-    def __mul__(self, other):
+    def __mul__(self, other: object) -> 'Sample | NotImplementedType':
         """Return self*other. Works only for multiplication by a scalar."""
         if isinstance(other, (int, float)):
             return Sample(self.data * other, self.sample_rate)
         return NotImplemented
 
-    def __rmul__(self, other):
+    def __rmul__(self, other: object) -> 'Sample | NotImplementedType':
         """Return other*self. Works only for multiplication by a scalar."""
         if isinstance(other, (int, float)):
             return self.__mul__(other)
         return NotImplemented
 
-    def plot(self):
+    def plot(self) -> None:
         """Plot the data using Matplotlib."""
         t_array = self.t_axis.range(len(self.data))
         plt.plot(t_array, self.data)
@@ -309,14 +312,14 @@ class Sample:
 class TimeFrequency:
     """A class to represent a sound sample in the time-frequency domain."""
 
-    spectrum: np.ndarray
-    phase: np.ndarray
+    spectrum: npt.NDArray
+    phase: npt.NDArray
     t_axis: Axis
     f_axis: Axis
 
     @classmethod
     def stft(cls, sample: Sample, window_length: int = 2047, fft_length: int = 8192,
-             window_type: str = 'blackman', overlap: int = 0):
+             window_type: str | float | tuple = 'blackman', overlap: int = 0) -> 'TimeFrequency':
         """Return Time-frequency representation using Short-time Fourier transform.
 
         :param sample: Input `Sample`.
@@ -352,7 +355,7 @@ class TimeFrequency:
         f_step = sample.sample_rate / fft_length
         return cls(spectrum_array, phase_array, Axis(t_step, t_start), Axis(f_step))
 
-    def plot_spectrogram(self):
+    def plot_spectrogram(self) -> None:
         """Plot the spectrogram using Matplotlib."""
 
         values = np.transpose(self.spectrum[:, :])
