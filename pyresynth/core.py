@@ -266,13 +266,21 @@ class Sample:
         envelope_start = window_length / 2 * self.t_axis.step
         return Envelope(envelope_data, Axis(envelope_step, envelope_start))
 
-    def __sub__(self, other: 'Sample') -> 'Sample':
-        """Return self-other. Works only if sample rates match."""
-        return self.__binary_op(other, lambda x, y: x - y, lambda x: -x)
-
-    def __add__(self, other: 'Sample') -> 'Sample':
+    def __add__(self, other: object) -> 'Sample':
         """Return self+other. Works only if sample rates match."""
-        return self.__binary_op(other, lambda x, y: x + y, lambda x: x)
+        if isinstance(other, (int, float)):
+            return Sample(self.data + other, self.sample_rate)
+        elif isinstance(other, Sample):
+            return self.__binary_op(other, lambda x, y: x + y, lambda x: x)
+        return NotImplemented
+
+    def __sub__(self, other: object) -> 'Sample':
+        """Return self-other. Works only if sample rates match."""
+        if isinstance(other, (int, float)):
+            return Sample(self.data - other, self.sample_rate)
+        elif isinstance(other, Sample):
+            return self.__binary_op(other, lambda x, y: x - y, lambda x: -x)
+        return NotImplemented
 
     def __binary_op(self, other, binary_fun, unary_fun):
         if self.sample_rate != other.sample_rate:

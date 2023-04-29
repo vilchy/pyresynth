@@ -60,3 +60,45 @@ def test_envelope_rms_value():
     square_signal = core.Sample.generate_sin(1, 1, 100)
     square_rms_value = square_signal.envelope_peak(100).data[0]
     np.testing.assert_almost_equal(square_rms_value, 0, 2)
+
+
+def test_sample_add_for_samples_with_equal_lengths():
+    s1 = core.Sample(np.array([0.2, 0.3]))
+    s2 = core.Sample(np.array([0.5, -0.7]))
+    np.testing.assert_almost_equal((s1 + s2).data, np.array([0.7, -0.4]))
+
+
+def test_sample_add_for_samples_with_unequal_lengths():
+    s1 = core.Sample(np.array([0.2, 0.3]))
+    s2 = core.Sample(np.array([0.5]))
+    np.testing.assert_almost_equal((s1 + s2).data, np.array([0.7, 0.3]))
+
+    s1 = core.Sample(np.array([0.2]))
+    s2 = core.Sample(np.array([0.5, -0.7]))
+    np.testing.assert_almost_equal((s1 + s2).data, np.array([0.7, -0.7]))
+
+
+def test_sample_add_for_sample_and_scalar():
+    s = core.Sample(np.array([0.2, 0.3]))
+    np.testing.assert_almost_equal((s + 0.5).data, np.array([0.7, 0.8]))
+
+
+def test_sample_sub_for_samples_with_equal_lengths():
+    s1 = core.Sample(np.array([0.2, 0.3]))
+    s2 = core.Sample(np.array([0.5, -0.7]))
+    np.testing.assert_almost_equal((s1 - s2).data, np.array([-0.3, 1.0]))
+
+
+def test_sample_sub_for_samples_with_unequal_lengths():
+    s1 = core.Sample(np.array([0.2, 0.3]))
+    s2 = core.Sample(np.array([0.5]))
+    np.testing.assert_almost_equal((s1 - s2).data, np.array([-0.3, 0.3]))
+
+    s1 = core.Sample(np.array([0.2]))
+    s2 = core.Sample(np.array([0.5, -0.7]))
+    np.testing.assert_almost_equal((s1 - s2).data, np.array([-0.3, 0.7]))
+
+
+def test_sample_sub_for_sample_and_scalar():
+    s = core.Sample(np.array([0.2, 0.3]))
+    np.testing.assert_almost_equal((s - 0.5).data, np.array([-0.3, -0.2]))
