@@ -108,7 +108,8 @@ class Sample:
 
     default_sample_rate = 44100
 
-    def __init__(self, data: Optional[npt.NDArray] = None, sample_rate: int = default_sample_rate) -> None:
+    def __init__(self, data: Optional[npt.NDArray] = None,
+                 sample_rate: int = default_sample_rate) -> None:
         """`Sample` constructor.
 
         :param data: Optional NumPy array with float32 data in the range [-1.0, 1.0].
@@ -153,7 +154,7 @@ class Sample:
         :param sample_rate: Sample rate in samples/sec.
         :return: `Sample` object containing the sine wave.
         """
-        t_array = np.linspace(0, duration, round(duration * sample_rate), endpoint=False)
+        t_array = _t_array(duration, sample_rate)
         data = np.sin(2 * np.pi * frequency * t_array)
         return cls(data, sample_rate)
 
@@ -167,7 +168,7 @@ class Sample:
         :param sample_rate: Sample rate in samples/sec.
         :return: A `Sample` object containing the square-wave waveform.
         """
-        t_array = np.linspace(0, duration, round(duration * sample_rate), endpoint=False)
+        t_array = _t_array(duration, sample_rate)
         data = scipy.signal.square(2 * np.pi * frequency * t_array)
         return cls(data, sample_rate)
 
@@ -182,7 +183,7 @@ class Sample:
         :param sample_rate: Sample rate in samples/sec.
         :return: `Sample` object containing the signal with the requested time-varying frequency.
         """
-        t_array = np.linspace(0, duration, round(duration * sample_rate), endpoint=False)
+        t_array = _t_array(duration, sample_rate)
         data = scipy.signal.chirp(t_array, f0=frequency_0, f1=frequency_1, t1=duration)
         return cls(data, sample_rate)
 
@@ -196,7 +197,8 @@ class Sample:
         :param sample_rate: Sample rate in samples/sec.
         :return: `Sample` object containing the white noise signal.
         """
-        data = np.random.uniform(low=-intensity, high=intensity, size=round(duration*sample_rate))
+        data = np.random.uniform(low=-intensity, high=intensity,
+                                 size=round(duration * sample_rate))
         return cls(data, sample_rate)
 
     @property
@@ -249,7 +251,7 @@ class Sample:
             return 10 * np.log10(np.mean(np.square(array)))
         return self.__envelope(rms_func, window_length, overlap)
 
-    def __envelope(self, fun, window_length, overlap = 0):
+    def __envelope(self, fun, window_length, overlap=0):
         hop_length = floor(window_length * (100 - overlap) / 100)
         frame_count = ceil((len(self.data) - window_length) / hop_length) + 1
         if frame_count < 1:
@@ -308,6 +310,10 @@ class Sample:
         plt.show()
 
 
+def _t_array(duration, sample_rate):
+    return np.linspace(0, duration, round(duration * sample_rate), endpoint=False)
+
+
 @dataclass
 class TimeFrequency:
     """A class to represent a sound sample in the time-frequency domain."""
@@ -357,7 +363,6 @@ class TimeFrequency:
 
     def plot_spectrogram(self) -> None:
         """Plot the spectrogram using Matplotlib."""
-
         values = np.transpose(self.spectrum[:, :])
         t_array = self.t_axis.range(self.spectrum.shape[0])
         f_array = self.f_axis.range(self.spectrum.shape[1])

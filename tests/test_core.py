@@ -38,7 +38,8 @@ def test_envelope_for_all_values_above_threshold():
 
 def test_envelope_for_values_below_threshold():
     assert envelope_data([-180, -39, -43, -32, -180], -90) == [-180, -39, -43, -32, -180]
-    assert envelope_data([-180, -180, -39, -43, -32, -180, -180], -90) == [-180, -39, -43, -32, -180]
+    assert envelope_data([-180, -180, -39, -43, -32, -180, -180], -90) \
+        == [-180, -39, -43, -32, -180]
 
 
 def test_envelope_peak_value():
