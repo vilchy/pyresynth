@@ -20,7 +20,7 @@ $ pip install -e pyresynth
 Example use
 -----------
 ```
-from pyresynth import Sample
+from pyresynth import Sample, TimeFrequency
 
 # read a WAV file and play it
 song = Sample.load("the_liberty_bell.wav")
@@ -37,6 +37,12 @@ s3.save("out_signal.wav")
 # plot RMS amplitude envelope
 e = s3.envelope_rms(150)
 e.plot()
+
+# return time-frequency representation
+tf = TimeFrequency.stft(s3)
+
+# plot spectrogram
+tf.plot_spectrogram()
 ```
 
 

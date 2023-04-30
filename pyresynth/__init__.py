@@ -1,5 +1,5 @@
 """Top-level module for pyresynth."""
 
-from .core import Sample
+from .core import Sample, TimeFrequency
 
-__all__ = ['Sample']
+__all__ = ['Sample', 'TimeFrequency']
