@@ -384,7 +384,8 @@ def _stft_frame(in_array, fft_length, window, coherent_power_gain):
     ft_result = _zero_phase_rfft(in_array, fft_length, window)
     spectrum = abs(ft_result) / len(window)
     spectrum[1:] *= 2  # single-sided FT requires multiplication by 2
-    log_power_spectrum = 20 * np.log10(spectrum) + coherent_power_gain
+    with np.errstate(divide='ignore'):
+        log_power_spectrum = 20 * np.log10(spectrum) + coherent_power_gain
     phase = np.unwrap(np.angle(ft_result))
     return log_power_spectrum, phase
 
