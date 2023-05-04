@@ -63,7 +63,7 @@ class Envelope:
             self.threshold = threshold
         if len(data) > 0:
             # trim envelope to values only above the threshold
-            above_threshold_indices = np.where(data >= self.threshold)[0]
+            above_threshold_indices = np.nonzero(data >= self.threshold)[0]
             # leave one sample of silence if possible
             first_idx = max(0, above_threshold_indices[0] - 1)
             last_idx = min(len(data) - 1, above_threshold_indices[-1] + 1)
@@ -82,8 +82,8 @@ class Envelope:
         """
         above_threshold_data = (self.data > threshold).astype('int')
         threshold_transitions = above_threshold_data[1:] - above_threshold_data[:-1]
-        start_indices = np.where(threshold_transitions == 1)[0] + 1
-        end_indices = np.where(threshold_transitions == -1)[0] + 1
+        start_indices = np.nonzero(threshold_transitions == 1)[0] + 1
+        end_indices = np.nonzero(threshold_transitions == -1)[0] + 1
         if len(above_threshold_data) > 0:
             if above_threshold_data[0] == 1:
                 # append, because no transition at the beginning
