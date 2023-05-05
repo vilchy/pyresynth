@@ -104,15 +104,15 @@ def test_sample_sub_for_sample_and_scalar():
     np.testing.assert_almost_equal((s - 0.5).data, np.array([-0.3, -0.2]))
 
 
-def test_time_frequency_stft_spectrum_shape():
+def test_time_frequency_stft_magnitude_shape():
     # sanity check
     s = core.Sample(np.ones(16))
 
     tf = core.TimeFrequency.stft(s,  window_length=4, fft_length=4)
-    assert np.shape(tf.spectrum) == (4, 3)
+    assert np.shape(tf.magnitude) == (4, 3)
 
     tf = core.TimeFrequency.stft(s,  window_length=4, fft_length=8)
-    assert np.shape(tf.spectrum) == (4, 5)
+    assert np.shape(tf.magnitude) == (4, 5)
 
     tf = core.TimeFrequency.stft(s,  window_length=4, fft_length=4, overlap=50)
-    assert np.shape(tf.spectrum) == (7, 3)
+    assert np.shape(tf.magnitude) == (7, 3)

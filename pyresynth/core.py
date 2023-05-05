@@ -326,10 +326,19 @@ def _t_array(duration, sample_rate):
 class TimeFrequency:
     """A class to represent a sound sample in the time-frequency domain."""
 
-    spectrum: npt.NDArray
-    phase: npt.NDArray
+    frames: npt.NDArray
     t_axis: Axis
     f_axis: Axis
+
+    @property
+    def magnitude(self) -> npt.NDArray:
+        """Frames view with magnitude spectrum."""
+        return self.frames[:, 0, :]
+
+    @property
+    def phase(self) -> npt.NDArray:
+        """Frames view with phase spectrum."""
+        return self.frames[:, 1, :]
 
     @classmethod
     def stft(cls, sample: Sample, window_length: int = 2047, fft_length: int = 8192,
@@ -349,31 +358,27 @@ class TimeFrequency:
         hop_length = floor(window_length * (100 - overlap) / 100)
         frame_count = ceil((len(sample.data) - window_length) / hop_length) + 1
         width = floor(fft_length / 2) + 1  # only real input
-        spectrum_array = np.zeros([frame_count, width])
-        phase_array = np.zeros([frame_count, width])
+        frames = np.zeros([frame_count, 2, width])
 
         for i in range(0, frame_count - 1):
             data_slice = sample.data[i * hop_length: i * hop_length + window_length]
-            spectrum, phase = _stft_frame(data_slice, fft_length, window, coherent_power_gain)
-            spectrum_array[i, :] = spectrum
-            phase_array[i, :] = phase
+            frames[i] = _stft_frame(data_slice, fft_length, window, coherent_power_gain)
+
         # last frame
         data_slice = sample.data[(frame_count - 1) * hop_length:]
         window = scipy.signal.get_window(window_type, len(data_slice), False)
-        spectrum, phase = _stft_frame(data_slice, fft_length, window, coherent_power_gain)
-        spectrum_array[frame_count - 1, :] = spectrum
-        phase_array[frame_count - 1, :] = phase
+        frames[frame_count - 1] = _stft_frame(data_slice, fft_length, window, coherent_power_gain)
 
         t_step = hop_length / sample.sample_rate
         t_start = window_length / (2 * sample.sample_rate)
         f_step = sample.sample_rate / fft_length
-        return cls(spectrum_array, phase_array, Axis(t_step, t_start), Axis(f_step))
+        return cls(frames, Axis(t_step, t_start), Axis(f_step))
 
     def plot_spectrogram(self) -> None:
         """Plot the spectrogram using Matplotlib."""
-        values = np.transpose(self.spectrum[:, :])
-        t_array = self.t_axis.range(self.spectrum.shape[0])
-        f_array = self.f_axis.range(self.spectrum.shape[1])
+        values = np.transpose(self.magnitude[:, :])
+        t_array = self.t_axis.range(self.magnitude.shape[0])
+        f_array = self.f_axis.range(self.magnitude.shape[1])
 
         T, F = np.meshgrid(t_array, f_array)
         plt.pcolormesh(T, F, values, shading='gouraud')
@@ -382,12 +387,12 @@ class TimeFrequency:
 
 def _stft_frame(in_array, fft_length, window, coherent_power_gain):
     ft_result = _zero_phase_rfft(in_array, fft_length, window)
-    spectrum = abs(ft_result) / len(window)
-    spectrum[1:] *= 2  # single-sided FT requires multiplication by 2
+    magnitude = abs(ft_result) / len(window)
+    magnitude[1:] *= 2  # single-sided FT requires multiplication by 2
     with np.errstate(divide='ignore'):
-        log_power_spectrum = utils.amp_to_db(spectrum) + coherent_power_gain
+        log_power_magnitude = utils.amp_to_db(magnitude) + coherent_power_gain
     phase = np.unwrap(np.angle(ft_result))
-    return log_power_spectrum, phase
+    return np.vstack((log_power_magnitude, phase))
 
 
 def _zero_phase_rfft(in_array, fft_length, window):
