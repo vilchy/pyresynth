@@ -45,21 +45,21 @@ def test_envelope_for_values_below_threshold():
 def test_envelope_peak_value():
     sin_signal = core.Sample.generate_sin(1, 1, 100)
     sin_peak_value = sin_signal.envelope_peak(100).data[0]
-    np.testing.assert_almost_equal(sin_peak_value, 0, 2)
+    np.testing.assert_almost_equal(sin_peak_value, 0, decimal=2)
 
-    square_signal = core.Sample.generate_sin(1, 1, 100)
+    square_signal = core.Sample.generate_square(1, 1, 100)
     square_peak_value = square_signal.envelope_peak(100).data[0]
-    np.testing.assert_almost_equal(square_peak_value, 0, 2)
+    np.testing.assert_almost_equal(square_peak_value, 0, decimal=2)
 
 
 def test_envelope_rms_value():
     sin_signal = core.Sample.generate_sin(1, 1, 100)
     sin_rms_value = sin_signal.envelope_rms(100).data[0]
-    np.testing.assert_almost_equal(sin_rms_value, -3, 2)
+    np.testing.assert_almost_equal(sin_rms_value, -3, decimal=2)
 
-    square_signal = core.Sample.generate_sin(1, 1, 100)
-    square_rms_value = square_signal.envelope_peak(100).data[0]
-    np.testing.assert_almost_equal(square_rms_value, 0, 2)
+    square_signal = core.Sample.generate_square(1, 1, 100)
+    square_rms_value = square_signal.envelope_rms(100).data[0]
+    np.testing.assert_almost_equal(square_rms_value, 0, decimal=2)
 
 
 def test_sample_add_for_samples_with_equal_lengths():
