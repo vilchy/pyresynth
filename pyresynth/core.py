@@ -237,7 +237,7 @@ class Sample:
         :return: Envelope of peak amplitude values.
         """
         def peak_func(array):
-            return 20 * np.log10(np.max(np.abs(array)))
+            return utils.amp_to_db(np.max(np.abs(array)))
         return self.__envelope(peak_func, window_length, overlap)
 
     def envelope_rms(self, window_length: int, overlap: int = 0) -> Envelope:
@@ -248,7 +248,7 @@ class Sample:
         :return: Envelope of RMS amplitude values.
         """
         def rms_func(array):
-            return 10 * np.log10(np.mean(np.square(array)))
+            return utils.amp_to_db(np.mean(np.square(array))) * 0.5
         return self.__envelope(rms_func, window_length, overlap)
 
     def __envelope(self, fun, window_length, overlap=0):
@@ -344,7 +344,7 @@ class TimeFrequency:
         :return: `TimeFrequency` representation of the input sample.
         """
         window = scipy.signal.get_window(window_type, window_length, False)
-        coherent_power_gain = 20 * np.log10(window_length / sum(window))
+        coherent_power_gain = utils.amp_to_db(window_length / sum(window))
 
         hop_length = floor(window_length * (100 - overlap) / 100)
         frame_count = ceil((len(sample.data) - window_length) / hop_length) + 1
@@ -385,7 +385,7 @@ def _stft_frame(in_array, fft_length, window, coherent_power_gain):
     spectrum = abs(ft_result) / len(window)
     spectrum[1:] *= 2  # single-sided FT requires multiplication by 2
     with np.errstate(divide='ignore'):
-        log_power_spectrum = 20 * np.log10(spectrum) + coherent_power_gain
+        log_power_spectrum = utils.amp_to_db(spectrum) + coherent_power_gain
     phase = np.unwrap(np.angle(ft_result))
     return log_power_spectrum, phase
 
