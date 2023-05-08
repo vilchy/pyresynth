@@ -13,7 +13,7 @@ with open('LICENSE') as f:
 setup(
     name='pyresynth',
     version='0.0.1',
-    description='Package for sound resynthesis',
+    description='Package for sound analysis',
     long_description=readme,
     author='Artur Wilniewczyc',
     author_email='artur.wilniewczyc@gmail.com',

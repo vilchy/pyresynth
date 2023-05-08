@@ -1,6 +1,7 @@
 pyresynth
 =========
-A python package for modeling of musical instruments sounds based on examples.
+A python package for sound analysis.
+
 Work in progress…
 
 Installation
